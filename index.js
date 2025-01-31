@@ -1,61 +1,103 @@
 #!/usr/bin/env node
 
-import express from 'express';
-import Ajv from 'ajv';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import { exec } from 'child_process'
+import path from 'path';
+import os from 'os';
 
-const app = express();
-const port = 3000;
-const ajv = new Ajv();
+const default_db = path.join(os.homedir(), ".local/share/notedeck/db")
 
-class MCP {
-    constructor() {
-        this.tools = {};
-    }
-
-    registerTool(name, handler, schema) {
-        this.tools[name] = { handler, schema };
-    }
-
-    async handleRequest(req, res) {
-        const { tool, params } = req.body;
-
-        if (this.tools[tool]) {
-            const { handler, schema } = this.tools[tool];
-            const validate = ajv.compile(schema);
-            const valid = validate(params);
-
-            if (!valid) {
-                return res.json({ status: 'error', message: 'Invalid parameters', errors: validate.errors });
-            }
-
-            try {
-                const result = await handler(params);
-                res.json({ status: 'success', result });
-            } catch (error) {
-                res.json({ status: 'error', message: error.message });
-            }
-        } else {
-            res.json({ status: 'error', message: 'Tool not found' });
-        }
-    }
+// Function to execute ndb command line tool
+function executeNdbCommand (args) {
+  return new Promise((resolve, reject) => {
+	  console.error(`executing ndb ${args}`)
+    exec(`ndb ${args}`, { }, (error, stdout, stderr) => {
+      if (error) {
+        reject(new Error(stderr))
+        return
+      }
+      resolve(stdout.trim())
+    })
+  })
 }
 
-const mcp = new MCP();
+const tools = [
+  {
+    name: "ndb_stat",
+    description: 'Get statistics of the NDB.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        dbDir: { type: 'string', description: 'The database directory', default: default_db }
+      },
+      required: ['dbDir']
+    },
+    execute: ({ dbDir }) => {
+      dbDir = dbDir || default_db;
+      return executeNdbCommand(`-d ${dbDir} stat`)
+    }
+  },
+  {
+    name: "ndb_query",
+    description: 'Query the NDB with specific parameters.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        dbDir: { type: 'string', description: 'The database directory', default: default_db },
+        limit: { type: 'number', description: 'Returns results in descending order, with at most this many results', default: 100 },
+        kind: { type: 'number', description: 'The note kind to filter on. Text notes are 1' },
+        author: { type: 'string', description: 'The author pubkey' },
+        search: { type: 'string', description: 'The full text search string' }
+      },
+      required: ["limit"]
+    },
+    execute: ({ dbDir, limit, kind, author, search }) => {
+      dbDir = dbDir || default_db;
+      let queryArgs = `-d ${dbDir} query`
+      if (limit != null) queryArgs += ` --limit ${limit}`
+      if (kind != null) queryArgs += ` --kind ${kind}`
+      if (author) queryArgs += ` --author ${author}`
+      if (search) queryArgs += ` --search "${search}"`
+      return executeNdbCommand(queryArgs)
+    }
+  }
+]
 
-// Register a hello_world command with schema validation
-const helloWorldSchema = {
-    type: 'object',
-    properties: {},
-    required: [],
-};
+const server = new Server({
+  name: 'nostrdb-server',
+  version: '1.0.0'
+}, {
+  capabilities: { tools: {} }
+})
 
-mcp.registerTool('hello_world', async () => {
-    return { message: 'Hello, world!' };
-}, helloWorldSchema);
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return { tools }
+})
 
-app.use(express.json());
-app.post('/mcp', (req, res) => mcp.handleRequest(req, res));
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params
 
-app.listen(port, () => {
-    console.log(`MCP protocol server running at http://localhost:${port}`);
-});
+  if (!args) {
+    throw new Error(`No arguments provided for tool: ${name}`)
+  }
+
+  const tool = tools.find((t) => t.name === name);
+  if (!tool) {
+    throw new Error(`Unknown tool: ${name}`)
+  }
+
+  return { content: [{ type: 'text', text: JSON.stringify(await tool.execute(args), null, 2) }] }
+})
+
+async function main () {
+  const transport = new StdioServerTransport()
+  await server.connect(transport)
+  console.error('Nostrdb MCP Server running on stdio')
+}
+
+main().catch((error) => {
+  console.error('Fatal error in main():', error)
+  process.exit(1)
+})

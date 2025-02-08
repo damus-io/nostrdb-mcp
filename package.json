@@ -1,6 +1,6 @@
 {
   "name": "nostrdb-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A Model Context Protocol server for nostrdb enabling LLMs to query nostr via the nostrdb command line tool.",
   "main": "index.js",
   "bin": {
@@ -24,6 +24,6 @@
   "author": "William Casarin <jb55@jb55.com>",
   "license": "MIT",
   "dependencies": {
-    "some-dependency": "^1.0.0"
+    "@modelcontextprotocol/sdk": "^1.4.1"
   }
 }

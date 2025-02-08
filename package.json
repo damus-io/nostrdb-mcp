@@ -1,8 +1,29 @@
 {
   "name": "nostrdb-mcp",
   "version": "1.0.0",
-  "type": "module",
+  "description": "A Model Context Protocol server for nostrdb enabling LLMs to query nostr via the nostrdb command line tool.",
+  "main": "index.js",
+  "bin": {
+    "nostrdb-mcp": "index.js"
+  },
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "echo \"No test specified\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/damus-io/nostrdb-mcp.git"
+  },
+  "keywords": [
+    "mcp",
+    "nostrdb",
+    "ndb",
+    "llm",
+    "notedeck"
+  ],
+  "author": "William Casarin <jb55@jb55.com>",
+  "license": "MIT",
+  "dependencies": {
+    "some-dependency": "^1.0.0"
   }
 }

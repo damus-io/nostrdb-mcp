@@ -7,7 +7,8 @@ import { exec } from 'child_process'
 import path from 'path';
 import os from 'os';
 
-const default_db = path.join(os.homedir(), ".local/share/notedeck/db")
+const db_dir = os.platform() === 'darwin' ?  'Library/Application Support/notedeck/db' :  '.local/share/notedeck/db';
+const default_db = path.join(os.homedir(), db_dir)
 
 // Function to execute ndb command line tool
 function executeNdbCommand (args) {

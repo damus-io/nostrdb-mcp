@@ -21,7 +21,7 @@ You can configure [goose](https://github.com/block/goose) to use this tool:
 $ goose configure
 ```
 
-When adding a provider, use: `npx -y nostrdb-mcp"
+When adding a provider, use: `npx -y nostrdb-mcp`
 
 You can create a temporary session to try it out like so:
 

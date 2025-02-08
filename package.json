@@ -1,6 +1,6 @@
 {
   "name": "nostrdb-mcp",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "A Model Context Protocol server for nostrdb enabling LLMs to query nostr via the nostrdb command line tool.",
   "main": "index.js",
   "type": "module",

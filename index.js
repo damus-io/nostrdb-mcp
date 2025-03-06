@@ -37,7 +37,7 @@ const tools = [
     },
     execute: ({ dbDir }) => {
       dbDir = dbDir || default_db;
-      return executeNdbCommand(`-d ${dbDir} stat`)
+      return executeNdbCommand(`-d "${dbDir}" stat`)
     }
   },
   {
@@ -56,7 +56,7 @@ const tools = [
     },
     execute: ({ dbDir, limit, kind, author, search }) => {
       dbDir = dbDir || default_db;
-      let queryArgs = `-d ${dbDir} query`
+      let queryArgs = `-d "${dbDir}" query`
       if (limit != null) queryArgs += ` --limit ${limit}`
       if (kind != null) queryArgs += ` --kind ${kind}`
       if (author) queryArgs += ` --author ${author}`
